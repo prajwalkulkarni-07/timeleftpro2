@@ -128,10 +128,12 @@ const TaskManager = () => {
     }));
   };
   const maxVisibleTasks = 6;
-  const taskListMaxHeight = filteredTasks.length >= maxVisibleTasks ? `${maxVisibleTasks * taskItemHeight}rem` : 'auto';
+  const taskListMaxHeight = filteredTasks.length >= maxVisibleTasks 
+      ? `${maxVisibleTasks * taskItemHeight}rem` 
+      : 'auto';
 
   return (
-    <div className="card h-full flex flex-col">
+    <div className="card flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Tasks</h2>
         <div className="flex gap-2">
@@ -348,7 +350,7 @@ const TaskManager = () => {
       )}
       
       <div 
-        className={`flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 ${filteredTasks.length === 0 ? 'flex items-center justify-center' : ''}`}
+        className={`overflow-y-auto overflow-x-hidden space-y-2 pr-1 ${filteredTasks.length === 0 && !editingTask ? 'flex items-center justify-center' : ''}`}
         style={{ maxHeight: taskListMaxHeight }}
       >
         {filteredTasks.length === 0 ? (

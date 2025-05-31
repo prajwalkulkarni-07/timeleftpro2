@@ -82,26 +82,26 @@ const Analytics = () => {
   };
 
   // Daily focus time data for the last 7 days
-  // Only show data if there are actual focus sessions completed
-  const hasFocusSessions = state.focusSessions && state.focusSessions.length > 0;
-  
-  // Check if the focus sessions are from actual user activity, not sample data
-  const focusSessionsFromSampleData = state.focusSessions.every(session => 
-    session.id === '1' || session.id === '2' // IDs used in sampleData.js
-  );
-  
-  // Only show real focus session data, not sample data
-  const shouldShowFocusData = hasFocusSessions && !focusSessionsFromSampleData;
-  
   const dailyFocusTimeData = {
     labels: displayDayLabels,
     datasets: [
       {
         label: 'Focus Time (minutes)',
-        data: shouldShowFocusData ? daysInWeek.map(day => {
+        data: daysInWeek.map(day => {
           const dayStr = format(day, 'yyyy-MM-dd');
-          return state.analytics.dailyStats[dayStr]?.focusTime || 0;
-        }) : [0, 0, 0, 0, 0, 0, 0], // Default to zeros if no focus sessions or only sample data
+          let totalFocusForDay = 0;
+          if (state.focusSessions && state.focusSessions.length > 0) {
+            state.focusSessions.forEach(session => {
+              if (session.completed && session.endTime) {
+                const sessionEndDate = parseISO(session.endTime);
+                if (format(sessionEndDate, 'yyyy-MM-dd') === dayStr) {
+                  totalFocusForDay += session.duration;
+                }
+              }
+            });
+          }
+          return totalFocusForDay;
+        }),
         fill: false,
         borderColor: 'rgba(75, 192, 192, 1)',
         tension: 0.1

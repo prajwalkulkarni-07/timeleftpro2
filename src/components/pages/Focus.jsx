@@ -17,9 +17,13 @@ const Focus = () => {
   );
 
   const handleSelectTask = (task) => {
-    setSelectedTask(task);
-    // Potentially switch to timer tab or update timer context
-    setActiveTab('timer'); 
+    // Toggle selection if clicking the same task
+    if (selectedTask && selectedTask.id === task.id) {
+      setSelectedTask(null);
+    } else {
+      setSelectedTask(task);
+      // Don't automatically switch to timer tab
+    }
   };
 
   // Placeholder for timer control logic that might be needed here or passed to FocusTimer
@@ -30,7 +34,7 @@ const Focus = () => {
   // };
 
   const todaySessions = state.focusSessions.filter(session => 
-    session.completedAt && isToday(parseISO(session.completedAt))
+    session.endTime && isToday(parseISO(session.endTime))
   );
 
   const pomodorosToday = todaySessions.filter(s => s.mode === 'pomodoro' && !s.isBreak);
@@ -96,23 +100,30 @@ const Focus = () => {
             <p className="text-gray-400 text-center py-4">No tasks with Pomodoros or Deep Focus sessions planned, or all are completed.</p>
           ) : (
             <div className="overflow-y-auto max-h-[calc(100vh-22rem)] space-y-3 pr-2"> {/* Adjusted max-h */} 
-              {focusTasks.map(task => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ease-in-out 
-                              ${selectedTask?.id === task.id ? 'bg-indigo-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'}`}
-                  onClick={() => handleSelectTask(task)}
-                >
-                  <h3 className={`font-medium ${selectedTask?.id === task.id ? 'text-white' : 'text-gray-100'}`}>{task.title}</h3>
-                  <div className={`text-xs mt-1 ${selectedTask?.id === task.id ? 'text-indigo-200' : 'text-gray-400'}`}>
-                    <span>Pomodoros: {task.completedPomodoros || 0} / {task.estPomodoros || 0}</span>
-                    <span className="mx-2">|</span>
-                    <span>Deep Sessions: {task.completedDeepSessions || 0} / {task.estDeepSessions || 0}</span>
-                  </div>
-                </motion.div>
-              ))}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ staggerChildren: 0.05 }}
+              >
+                {focusTasks.map(task => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={`p-4 rounded-lg cursor-pointer mb-3 
+                                ${selectedTask?.id === task.id ? 'bg-indigo-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'}`}
+                    onClick={() => handleSelectTask(task)}
+                  >
+                    <h3 className={`font-medium ${selectedTask?.id === task.id ? 'text-white' : 'text-gray-100'}`}>{task.title}</h3>
+                    <div className={`text-xs mt-1 ${selectedTask?.id === task.id ? 'text-indigo-200' : 'text-gray-400'}`}>
+                      <span>Pomodoros: {task.completedPomodoros || 0} / {task.estPomodoros || 0}</span>
+                      <span className="mx-2">|</span>
+                      <span>Deep Sessions: {task.completedDeepSessions || 0} / {task.estDeepSessions || 0}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
             </div>
           )}
         </div>
@@ -155,11 +166,11 @@ const Focus = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {todaySessions.sort((a,b) => parseISO(b.completedAt) - parseISO(a.completedAt)).map((session, index) => (
+                    {todaySessions.sort((a,b) => parseISO(b.endTime) - parseISO(a.endTime)).map((session, index) => (
                       <tr key={index} className={index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-850'}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{session.label}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatMinutes(session.duration)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{format(parseISO(session.completedAt), 'p')}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{format(parseISO(session.endTime), 'p')}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                           {session.isPartial ? <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-500 text-yellow-900">Partial</span> : <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-500 text-green-900">Full</span>}
                         </td>

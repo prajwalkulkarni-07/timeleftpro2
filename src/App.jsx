@@ -8,8 +8,8 @@ import Focus from './components/pages/Focus';
 // import FocusPage from './components/pages/FocusPage'; // Removed FocusPage import
 import Analytics from './components/pages/Analytics';
 import Habits from './components/pages/Habits';
-import { useLocalStorage } from './hooks/useLocalStorage';
-import { generateSampleData } from './utils/sampleData';
+import { useLocalStorage } from './hooks/useLocalStorage.js';
+import { generateSampleData } from './utils/sampleData.js';
 
 function App() {
   const [initialized, setInitialized] = useLocalStorage('app_initialized', false);
@@ -21,6 +21,8 @@ function App() {
       const sampleData = generateSampleData();
       // Ensure totalFocusTime starts at 0 for a new user
       sampleData.analytics.totalFocusTime = 0;
+      // Clear sample focus sessions for a new user
+      sampleData.focusSessions = []; 
       setAppData(sampleData);
       setInitialized(true);
     }

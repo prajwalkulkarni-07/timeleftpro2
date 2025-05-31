@@ -11,7 +11,7 @@ const modes = {
   deepWork: { label: 'Deep Work', time: 90 * 60, icon: <Brain className="h-5 w-5" />, color: 'rgba(125, 135, 255, 0.8)' }
 };
 
-const FocusTimer = () => {
+const FocusTimer = ({ selectedTask, setSelectedTask }) => {
   const { dispatch } = useAppContext();
   const [timerMode, setTimerMode] = useState('pomodoro');
   const [timeLeft, setTimeLeft] = useState(modes.pomodoro.time);
@@ -42,7 +42,10 @@ const FocusTimer = () => {
   useEffect(() => {
     if (!isActive) return;
     const start = Date.now();
-    const end = start + timeLeft * 1000;
+    // Calculate end time based on the *initial* timeLeft when the timer was started or mode changed
+    // This 'initialTimeLeftForEffect' will be captured by the closure of this useEffect instance
+    const initialTimeLeftForEffect = timeLeft; 
+    const end = start + initialTimeLeftForEffect * 1000;
     let rafId;
   
     const tick = () => {
@@ -65,7 +68,7 @@ const FocusTimer = () => {
   
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [isActive, timerMode, timeLeft, totalTime]); // Added timeLeft and totalTime, removed dispatch
+  }, [isActive, timerMode]); // Removed timeLeft and totalTime from dependencies
 
   const formatTime = secs => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -82,11 +85,15 @@ const FocusTimer = () => {
       payload: {
         duration: durationInSeconds / 60, // Convert seconds to minutes
         sessionDetails: {
-          mode: timerMode,
+          id: `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique ID
+          type: timerMode, // Store the type of session (pomodoro, shortBreak, deepWork)
+          mode: timerMode, // Redundant, but keeping for now if other parts use it
           label: modes[timerMode].label,
-          completedAt: new Date().toISOString(),
+          startTime: new Date(Date.now() - durationInSeconds * 1000).toISOString(), // Approximate start time
+          endTime: new Date().toISOString(), // Ensure endTime is always set
+          completed: true, // All logged sessions are considered 'completed' in terms of occurrence
           duration: durationInSeconds / 60,
-          isPartial: timeLeft > 0, // Mark as partial if timer wasn't completed
+          isPartial: timeLeft > 0 && durationInSeconds < modes[timerMode].time, // More accurate partial check
           isBreak: timerMode === 'shortBreak' // Add a flag to identify break sessions
         }
       }
@@ -117,7 +124,8 @@ const FocusTimer = () => {
 
   const current = modes[timerMode];
   const isBreak = timerMode === 'shortBreak';
-  const progress = ((totalTime - timeLeft) / totalTime) * 100;
+  const progress = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
+  const elapsedTime = totalTime - timeLeft;
 
   return (
     <div className="card p-6">
@@ -142,14 +150,14 @@ const FocusTimer = () => {
         <div className="text-center mb-4">
           <h3 className="text-xl font-semibold">{current.label}</h3>
           <p className="text-gray-400 text-sm mt-1">
-            {isBreak ? 'Break Time' : 'Focus Session'} • {formatTime(timeLeft)}
+            {isBreak ? 'Break Time' : 'Focus Session'} • {formatTime(elapsedTime)} {/* Changed to elapsedTime */}
           </p>
         </div>
 
         <div className="relative w-48 h-48 mb-6">
           {/* Hide default label and draw progress ring only */}
           <CircularProgress
-            percentage={progress}
+            percentage={progress} // This already represents elapsed percentage
             size={192}
             strokeWidth={12}
             color={isBreak ? modes.shortBreak.color : current.color}
@@ -167,7 +175,7 @@ const FocusTimer = () => {
         </div>
       </div>
 
-      <div className="flex justify-center gap-6">
+      <div className="flex justify-center gap-6 mb-6">
         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={toggleTimer} className="p-4 bg-indigo-600 hover:bg-indigo-700 rounded-full">
           {isActive ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
         </motion.button>
@@ -180,6 +188,32 @@ const FocusTimer = () => {
           <RotateCcw className="h-6 w-6" />
         </motion.button>
       </div>
+
+      {selectedTask && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-4 bg-gray-700 rounded-lg"
+        >
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-white">Current Task</h3>
+            <button 
+              onClick={() => setSelectedTask(null)} 
+              className="text-gray-400 hover:text-white text-sm"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="mt-2">
+            <p className="text-lg font-semibold">{selectedTask.title}</p>
+            <div className="text-sm mt-1 text-gray-300">
+              <span>Pomodoros: {selectedTask.completedPomodoros || 0} / {selectedTask.estPomodoros || 0}</span>
+              <span className="mx-2">|</span>
+              <span>Deep Sessions: {selectedTask.completedDeepSessions || 0} / {selectedTask.estDeepSessions || 0}</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
