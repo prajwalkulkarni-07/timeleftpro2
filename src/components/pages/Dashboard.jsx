@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, Clock, Calendar, BarChart2, ArrowRight } from 'lucide-react';
 import TimeProgress from '../time/TimeProgress';
 import { useAppContext } from '../../context/AppContext';
+import { formatMinutesToHoursAndMinutes } from '../../utils/timeUtils'; // Import the new helper
 
 const Dashboard = () => {
   const { state } = useAppContext();
@@ -16,7 +17,7 @@ const Dashboard = () => {
     return habit.completedDates.includes(today);
   }).length;
   const totalHabits = state.habits.length;
-  const focusTimeToday = Math.round(state.analytics.totalFocusTime / 60);
+  // const focusTimeToday = Math.round(state.analytics.totalFocusTime / 60); // Old calculation removed
   
   return (
     <motion.div
@@ -60,7 +61,7 @@ const Dashboard = () => {
           </div>
           <div className="mb-3">
             <div className="flex flex-col">
-              <span className="text-2xl font-bold">{focusTimeToday}h</span>
+              <span className="text-2xl font-bold">{formatMinutesToHoursAndMinutes(state.analytics.totalFocusTime)}</span>
               <span className="text-sm text-gray-400">Focus time today</span>
             </div>
           </div>

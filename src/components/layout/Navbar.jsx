@@ -9,8 +9,8 @@ const Navbar = () => {
     { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { path: '/focus', icon: Timer, label: 'Focus' },
     // { path: '/focus-zone', icon: Brain, label: 'Focus Zone' }, // Removed Focus Zone link
-    { path: '/analytics', icon: BarChart2, label: 'Analytics' },
-    { path: '/habits', icon: Heart, label: 'Habits' }
+    { path: '/habits', icon: Heart, label: 'Habits' },
+    { path: '/analytics', icon: BarChart2, label: 'Analytics' }
   ];
 
   return (

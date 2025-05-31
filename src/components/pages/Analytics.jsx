@@ -5,6 +5,7 @@ import { useAppContext } from '../../context/AppContext';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Filler } from 'chart.js';
 import { Doughnut, Bar, Line, Radar } from 'react-chartjs-2';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, getDay, parseISO } from 'date-fns';
+import { formatMinutesToHoursAndMinutes } from '../../utils/timeUtils'; // Import the new helper
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Filler);
@@ -154,7 +155,7 @@ const Analytics = () => {
         </div>
         <div className="bg-gray-800 p-3 rounded-lg">
           <p className="text-xs text-gray-400">Focus Time</p>
-          <p className="text-xl font-bold">{Math.round(state.analytics.totalFocusTime / 60)}h</p>
+          <p className="text-xl font-bold">{formatMinutesToHoursAndMinutes(state.analytics.totalFocusTime)}</p>
         </div>
         <div className="bg-gray-800 p-3 rounded-lg">
           <p className="text-xs text-gray-400">Productivity</p>
