@@ -36,25 +36,20 @@ export const calculateTimeProgress = (date, preferences) => {
 
 export const formatMinutesToHoursAndMinutes = (totalMinutes) => {
   if (totalMinutes === null || totalMinutes === undefined || totalMinutes < 0) {
-    return '0m';
+    return '0h 0m';
   }
   if (totalMinutes === 0) {
-    return '0m';
+    return '0h 0m';
   }
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
 
-  let result = '';
-  if (hours > 0) {
-    result += `${hours}h`;
+  // Always show hours and minutes in the format "Xh Ym"
+  let result = `${hours}h ${minutes}m`;
+  
+  // If totalMinutes is > 0 but hours and minutes are 0 (e.g. 0.4 minutes), show 0h <1m
+  if (hours === 0 && minutes === 0 && totalMinutes > 0) {
+    return '0h <1m'; 
   }
-  if (minutes > 0) {
-    if (hours > 0) result += ' ';
-    result += `${minutes}m`;
-  }
-  // If totalMinutes is > 0 but hours and minutes are 0 (e.g. 0.4 minutes), show <1m
-  if (result === '' && totalMinutes > 0) {
-    return '<1m'; 
-  }
-  return result || '0m'; // Fallback to 0m if result is empty (e.g. totalMinutes was 0)
+  return result;
 };

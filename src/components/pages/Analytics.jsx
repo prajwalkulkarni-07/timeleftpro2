@@ -1,14 +1,13 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { BarChart2 } from 'lucide-react';
+import React, { useContext } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Filler } from 'chart.js';
-import { Doughnut, Bar, Line, Radar } from 'react-chartjs-2';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, getDay, parseISO } from 'date-fns';
-import { formatMinutesToHoursAndMinutes } from '../../utils/timeUtils'; // Import the new helper
+import { Doughnut, Bar, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
+import { motion } from 'framer-motion';
+import { BarChart2, CheckCircle, XCircle } from 'lucide-react';
+import { format, getDay, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, isToday, isPast } from 'date-fns'; // Added isFuture, isToday, isPast
+import { formatMinutesToHoursAndMinutes } from '../../utils/timeUtils';
 
-// Register ChartJS components
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Filler);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
 
 const Analytics = () => {
   const { state } = useAppContext();
@@ -43,15 +42,13 @@ const Analytics = () => {
 
   // Weekly productivity data
   const today = new Date();
-  // Assuming week starts on Monday (1 for getDay, date-fns uses 0 for Sunday, 1 for Monday)
   const weekStartsOn = state.settings?.preferences?.startOfWeek === 0 ? 0 : 1; 
   const currentWeekStart = startOfWeek(today, { weekStartsOn });
   const currentWeekEnd = endOfWeek(today, { weekStartsOn });
   const daysInWeek = eachDayOfInterval({ start: currentWeekStart, end: currentWeekEnd });
 
-  const dailyTaskCounts = Array(7).fill(0);
+  const dailyTaskCounts = Array(7).fill(0); // Added back the declaration
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  // Adjust labels if week starts on Sunday
   const displayDayLabels = weekStartsOn === 0 ? ['Sun', ...dayLabels.slice(0,6)] : dayLabels;
 
   state.tasks.forEach(task => {
@@ -110,29 +107,16 @@ const Analytics = () => {
     ]
   };
 
-  // Habit consistency data (Radar Chart)
-  const habitNames = state.habits.map(h => h.name);
-  const habitCompletionPercentages = state.habits.map(habit => {
-    const totalPossibleCompletions = daysInWeek.length; // Assuming we track for the current week
-    const actualCompletions = daysInWeek.filter(day => 
-      habit.completedDates.includes(format(day, 'yyyy-MM-dd'))
-    ).length;
-    return totalPossibleCompletions > 0 ? (actualCompletions / totalPossibleCompletions) * 100 : 0;
+  const habitsWithCalendarData = state.habits.map(habit => {
+    const dailyStatus = daysInWeek.map(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const completed = habit.completedDates.includes(dayStr);
+      const habitCreatedAt = habit.createdAt ? parseISO(habit.createdAt) : new Date(0); // Handle undefined createdAt
+      return { date: day, completed, habitCreatedAt }; // Return date object, completion status, and habit creation date
+    });
+    return { ...habit, dailyStatus };
   });
 
-  const habitRadarData = {
-    labels: habitNames.length > 0 ? habitNames : ['No Habits Tracked'],
-    datasets: [
-      {
-        label: 'Completion %',
-        data: habitNames.length > 0 ? habitCompletionPercentages : [0],
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderColor: 'rgba(255, 99, 132, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
-  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -257,12 +241,12 @@ const Analytics = () => {
                 scales: {
                   y: {
                     beginAtZero: true,
-                    title: { display: true, text: 'Minutes', color: 'rgba(255, 255, 255, 0.7)', font: {size: 10}},
-                    ticks: { color: 'rgba(255, 255, 255, 0.7)', font: {size: 10}},
+                    title: { display: true, text: 'Minutes', color: 'rgba(255, 255, 255, 0.7)', font: {size: 12}}, // Increased font size
+                    ticks: { color: 'rgba(255, 255, 255, 0.7)', font: {size: 12}}, // Increased font size
                     grid: { color: 'rgba(255, 255, 255, 0.1)' }
                   },
                   x: {
-                    ticks: { color: 'rgba(255, 255, 255, 0.7)', font: {size: 10}},
+                    ticks: { color: 'rgba(255, 255, 255, 0.7)', font: {size: 12}}, // Increased font size
                     grid: { display: false }
                   }
                 },
@@ -274,28 +258,47 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Habit Consistency Chart */}
+        {/* Habit Consistency Calendar Grid */}
         <div className="w-full md:w-1/2">
           <h3 className="text-sm font-medium mb-2">Habit Consistency (Last 7 Days)</h3>
-          <div className="bg-gray-800 p-3 rounded-lg" style={{ height: '320px' }}>
+          <div className="bg-gray-800 p-3 rounded-lg" style={{ minHeight: '320px' }}>
             {state.habits.length > 0 ? (
-              <Radar 
-                data={habitRadarData} 
-                options={{
-                  maintainAspectRatio: false,
-                  scales: {
-                    r: {
-                      angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
-                      grid: { color: 'rgba(255, 255, 255, 0.2)' },
-                      pointLabels: { font: { size: 10 }, color: 'rgba(255, 255, 255, 0.7)' },
-                      ticks: { backdropColor: 'transparent', color: 'rgba(255,255,255,0.7)', font: {size: 8}, stepSize: 20, max: 100, min: 0 },
-                    }
-                  },
-                  plugins: {
-                    legend: { display: false }
-                  }
-                }}
-              />
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr>
+                      <th className="py-2 px-2 font-semibold text-gray-300">Habit</th>
+                      {displayDayLabels.map(dayLabel => (
+                        <th key={dayLabel} className="py-2 px-2 text-center font-semibold text-gray-300">{dayLabel.charAt(0)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {habitsWithCalendarData.map(habit => (
+                      <tr key={habit.id}>
+                        <td className="py-2 px-2 whitespace-nowrap text-gray-200">{habit.name}</td>
+                        {habit.dailyStatus.map((status, index) => {
+                          const dayIsPast = isPast(status.date) && !isToday(status.date);
+                          const dayIsToday = isToday(status.date);
+                          const dayIsAfterCreation = status.date >= status.habitCreatedAt;
+
+                          return (
+                            <td key={index} className="py-2 px-2 text-center">
+                              {status.completed && dayIsAfterCreation ? 
+                                <CheckCircle className="h-5 w-5 text-green-500 mx-auto" /> :
+                                (dayIsPast && !status.completed && dayIsAfterCreation ? 
+                                  <XCircle className="h-5 w-5 text-red-500 mx-auto" /> :
+                                  null // Empty for future days, today (if not completed), or days before habit creation
+                                )
+                              }
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
                 No Habits Tracked
